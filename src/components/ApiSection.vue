@@ -11,7 +11,6 @@ defineEmits(['copy-api']);
 
 <template>
   <div class="panel">
-    <p class="eyebrow">零心智切换</p>
     <h2 class="section-title">一行代码，即刻唤醒。</h2>
     <p class="section-desc">保留熟悉的 OpenAI 风格调用方式，接入成本极低，滚动到这里自动稳住节奏，方便用户停留和复制。</p>
 

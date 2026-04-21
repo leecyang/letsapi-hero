@@ -13,7 +13,6 @@ const props = withDefaults(
 
 <template>
   <div class="panel">
-    <p class="eyebrow">成本重构</p>
     <div class="price-title">
       <CountUp
         :from="7.3"

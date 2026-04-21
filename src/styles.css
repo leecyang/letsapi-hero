@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   color-scheme: dark;
   --bg-color: #020406;
@@ -66,6 +68,14 @@ body {
   font-family: "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body * {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 button,
@@ -166,6 +176,48 @@ select {
 
 .panel--wide {
   width: min(1120px, 100%);
+}
+
+.models-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(480px, 620px);
+  align-items: center;
+  gap: clamp(28px, 5vw, 64px);
+}
+
+.models-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 18px;
+}
+
+.model-scroll-shell {
+  width: 300%;
+  height: clamp(420px, 68vh, 720px);
+  justify-self: end;
+  transform: translateX(40rem);
+  padding-inline: clamp(12px, 2vw, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-scroll-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.model-scroll-card__name {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: left;
 }
 
 .eyebrow {
@@ -292,7 +344,6 @@ select {
 .api-url {
   font-size: 1.06rem;
   color: var(--text-primary);
-  user-select: all;
 }
 
 .copy-btn {
@@ -460,6 +511,21 @@ select {
   .dot-nav {
     right: 14px;
   }
+
+  .models-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .models-copy {
+    align-items: center;
+    text-align: center;
+  }
+
+  .model-scroll-shell {
+    justify-self: center;
+    width: min(100%, 38rem);
+  }
 }
 
 @media (max-width: 640px) {
@@ -476,6 +542,17 @@ select {
 
   .model-grid {
     grid-template-columns: 1fr;
+  }
+
+  .model-scroll-shell {
+    width: 100%;
+    height: min(60vh, 520px);
+    padding-inline: 0;
+  }
+
+  .model-scroll-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .dot-nav {
