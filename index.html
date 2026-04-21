@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LetsAPI Store - 超越极限的 Codex 体验</title>
+    <style>
+        /* --- 核心主题变量定义 --- */
+        :root {
+            /* 深色模式 (默认) */
+            --bg-color: #000000;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-desc: #aaaaaa;
+            --container-bg: rgba(255, 255, 255, 0.03);
+            --container-border: rgba(255, 255, 255, 0.1);
+            --container-hover-border: rgba(255, 255, 255, 0.25);
+            --card-bg: rgba(30, 30, 30, 0.4);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --btn-bg: #ffffff;
+            --btn-text: #000000;
+            --price-gradient-end: #333333;
+            --toast-bg: #ffffff;
+            --toast-text: #000000;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+            --logo-shadow: rgba(0, 198, 255, 0.4);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                /* 浅色模式优化 - 匹配上传图片的视觉需求 */
+                --bg-color: #fbfbfd; 
+                --text-primary: #1d1d1f;
+                --text-secondary: #6e6e73;
+                --text-desc: #424245; /* 调深颜色，确保描述文字清晰可见 */
+                --container-bg: rgba(0, 0, 0, 0.04);
+                --container-border: rgba(0, 0, 0, 0.08);
+                --container-hover-border: rgba(0, 0, 0, 0.15);
+                --card-bg: rgba(255, 255, 255, 0.8);
+                --card-border: rgba(0, 0, 0, 0.05);
+                --btn-bg: #1d1d1f;
+                --btn-text: #ffffff;
+                --price-gradient-end: #86868b; /* 优化1/3标题渐变，防止底部过浅 */
+                --toast-bg: #1d1d1f;
+                --toast-text: #ffffff;
+                --shadow-color: rgba(0, 0, 0, 0.05);
+                --logo-shadow: rgba(0, 198, 255, 0.15);
+            }
+        }
+
+        /* CSS Reset & 基础设置 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* 顶部细线进度条 */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00FF88, #00C6FF, #A020F0);
+            width: 0%;
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* 滚动轨道 */
+        .scroll-track {
+            height: 400vh;
+            position: relative;
+        }
+
+        /* 核心视口 */
+        .viewport {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* 背景特效层 */
+        .bg-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50vmin;
+            height: 50vmin;
+            transform-origin: center center;
+            z-index: 0;
+            pointer-events: none;
+            will-change: transform, opacity;
+            opacity: 0.15;
+        }
+
+        .openai-logo {
+            width: 100%;
+            height: 100%;
+            fill: url(#logo-gradient);
+            filter: drop-shadow(0 0 30px var(--logo-shadow));
+        }
+
+        /* 场景设定 */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+            padding: 0 20px;
+            will-change: transform, opacity;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #00FF88 0%, #00C6FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .price-title {
+            font-size: clamp(6rem, 15vw, 14rem);
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(180deg, var(--text-primary) 0%, var(--price-gradient-end) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.06em;
+            margin-bottom: 0px;
+        }
+
+        .price-subtitle {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        .price-desc {
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: var(--text-desc);
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        /* API 复制框 */
+        .api-container {
+            display: flex;
+            align-items: center;
+            background: var(--container-bg);
+            padding: 12px 12px 12px 28px;
+            border-radius: 100px;
+            border: 1px solid var(--container-border);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 30px 60px var(--shadow-color), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .api-container:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--container-hover-border);
+        }
+
+        .api-method {
+            color: #00FF88;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-right: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        .api-url {
+            color: var(--text-primary);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 1.15rem;
+            margin-right: 30px;
+            user-select: all;
+        }
+
+        .copy-btn {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.3);
+        }
+
+        /* 模型矩阵网格 */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .model-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .model-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.spark { background: rgba(255, 198, 0, 0.15); color: #FF9F00; border: 1px solid rgba(255,198,0,0.25); }
+        .badge.max { background: rgba(160, 32, 240, 0.15); color: #A020F0; border: 1px solid rgba(160,32,240,0.25); }
+        .badge.mini { background: rgba(0, 198, 255, 0.15); color: #007AFF; border: 1px solid rgba(0,198,255,0.25); }
+        .badge.codex { background: rgba(0, 255, 136, 0.15); color: #00B35E; border: 1px solid rgba(0,255,136,0.25); }
+        .badge.base { background: var(--container-border); color: var(--text-secondary); border: 1px solid var(--container-border); }
+
+        #toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px) scale(0.9);
+            opacity: 0;
+            background: var(--toast-bg);
+            color: var(--toast-text);
+            padding: 14px 30px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 1rem;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        @media (max-width: 768px) {
+            .api-container {
+                flex-direction: column;
+                text-align: center;
+                border-radius: 24px;
+                padding: 24px;
+            }
+            .api-method { margin-right: 0; margin-bottom: 12px; }
+            .api-url { margin-right: 0; margin-bottom: 24px; font-size: 1rem; word-break: break-all; }
+            .model-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress-bar"></div>
+
+    <div class="scroll-track">
+        <div class="viewport">
+            
+            <div class="bg-layer" id="bg-layer">
+                <svg class="openai-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00FF88" />
+                            <stop offset="50%" stop-color="#00C6FF" />
+                            <stop offset="100%" stop-color="#A020F0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z"></path>
+                </svg>
+            </div>
+
+            <div class="scene" id="scene-0">
+                <h1 class="hero-title">超越边界的<br><span class="highlight">Codex</span> 体验。</h1>
+                <p class="hero-subtitle">LetsAPI Store 带你无缝跨入原生大模型新纪元。</p>
+            </div>
+
+            <div class="scene" id="scene-1">
+                <div class="price-title">1 / 3</div>
+                <div class="price-subtitle">的极致价格</div>
+                <p class="price-desc">告别高昂成本。在这里，你将以三分之一的价格，完整体验 100% 满血性能的 Codex 全系列模型。</p>
+            </div>
+
+            <div class="scene" id="scene-2">
+                <h2 class="section-title">一行代码，即刻唤醒。</h2>
+                <div class="api-container">
+                    <div class="api-method">POST</div>
+                    <div class="api-url">https://letsapi.store/v1/responses</div>
+                    <button class="copy-btn" onclick="copyApi()" aria-label="复制代码">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="scene" id="scene-3">
+                <h2 class="section-title">全系矩阵，严阵以待。</h2>
+                <div class="model-grid" id="model-grid"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast">已复制 API 地址</div>
+
+    <script>
+        const models = ["gpt-5", "gpt-5-codex", "gpt-5-codex-mini", "gpt-5.1", "gpt-5.1-codex", "gpt-5.1-codex-max", "gpt-5.1-codex-mini", "gpt-5.2", "gpt-5.2-codex", "gpt-5.3-codex", "gpt-5.3-codex-spark", "gpt-5.4", "gpt-5.4-mini"];
+        
+        const grid = document.getElementById('model-grid');
+        models.forEach(model => {
+            const card = document.createElement('div');
+            card.className = 'model-card';
+            let bC = 'base', bT = 'BASE';
+            if (model.includes('spark')) { bC = 'spark'; bT = 'SPARK'; }
+            else if (model.includes('max')) { bC = 'max'; bT = 'MAX'; }
+            else if (model.includes('mini')) { bC = 'mini'; bT = 'MINI'; }
+            else if (model.includes('codex')) { bC = 'codex'; bT = 'CODEX'; }
+            card.innerHTML = `<div class="model-name">${model}</div><span class="badge ${bC}">${bT}</span>`;
+            grid.appendChild(card);
+        });
+
+        function copyApi() {
+            navigator.clipboard.writeText("https://letsapi.store/v1/responses").then(() => {
+                const t = document.getElementById('toast');
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 2000);
+            });
+        }
+
+        function updateLayout() {
+            const scrollY = window.scrollY;
+            const vH = window.innerHeight;
+            const sf = scrollY / vH;
+
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) progressBar.style.width = `${Math.min((sf / 3) * 100, 100)}%`;
+
+            const bg = document.getElementById('bg-layer');
+            if (bg) {
+                let scale = 1, op = 0.15;
+                if (sf < 1) { 
+                    scale = 1 + sf * 0.5; 
+                    op = 0.15 + sf * 0.1; 
+                } else if (sf < 2) { 
+                    scale = 1.5 + (sf - 1) * 0.5; 
+                    op = 0.25 + (sf - 1) * 0.25; 
+                } else { 
+                    let p = Math.max(0, sf - 2);
+                    scale = 2 + Math.pow(p, 4) * 48; 
+                    op = 0.5 - p * 0.45; 
+                }
+                bg.style.transform = `translate(-50%, -50%) rotate(${sf * 90}deg) scale(${scale})`;
+                bg.style.opacity = Math.max(0.05, op);
+            }
+
+            document.querySelectorAll('.scene').forEach((s, i) => {
+                let dist = Math.abs(sf - i);
+                let o = 1 - dist * 2; 
+                s.style.opacity = Math.max(0, o);
+                s.style.transform = `translateY(${(sf - i) * -80}px) scale(${1 - dist * 0.05})`;
+                s.style.pointerEvents = o > 0.5 ? 'auto' : 'none';
+            });
+        }
+
+        window.addEventListener('scroll', updateLayout);
+        window.addEventListener('DOMContentLoaded', updateLayout);
+        updateLayout();
+    </script>
+</body>
+</html>
