@@ -212,12 +212,32 @@ select {
 }
 
 .price-title {
-  font-size: clamp(6rem, 16vw, 14rem);
-  font-weight: 900;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: clamp(0.4rem, 1vw, 1rem);
   line-height: 0.92;
+}
+
+.price-number,
+.price-unit {
   background: linear-gradient(180deg, var(--text-primary) 0%, var(--price-gradient-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.price-number {
+  font-size: clamp(6rem, 16vw, 14rem);
+  font-weight: 900;
+}
+
+.price-unit {
+  padding-bottom: 0.18em;
+  font-size: clamp(1.2rem, 2.9vw, 2.7rem);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .price-subtitle {
