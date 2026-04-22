@@ -3,9 +3,14 @@
     <div
       :class="[
         'relative flex justify-center items-center w-full overflow-hidden infinite-scroll-wrapper',
-        { 'infinite-scroll-wrapper--tilted': isTilted }
+        {
+          'infinite-scroll-wrapper--tilted': isTilted,
+          'infinite-scroll-wrapper--disabled': !interactive
+        }
       ]"
       ref="wrapperRef"
+      :aria-disabled="!interactive"
+      :inert="!interactive ? '' : null"
       :style="{
         maxHeight: maxHeight,
         overscrollBehavior: 'none',
@@ -18,7 +23,10 @@
         class="infinite-scroll-frame"
       />
       <div
-        class="flex flex-col px-4 infinite-scroll-container cursor-grab"
+        :class="[
+          'flex flex-col px-4 infinite-scroll-container',
+          { 'infinite-scroll-container--interactive': interactive }
+        ]"
         ref="containerRef"
         :style="{
           transform: getTiltTransform(),
@@ -48,10 +56,7 @@
 
 <script setup lang="ts">
 import { gsap } from 'gsap';
-import { Observer } from 'gsap/all';
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
-
-gsap.registerPlugin(Observer);
 
 interface InfiniteScrollItem {
   content: string | object;
@@ -69,6 +74,7 @@ interface Props {
   autoplaySpeed?: number;
   autoplayDirection?: 'down' | 'up';
   pauseOnHover?: boolean;
+  interactive?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -82,15 +88,14 @@ const props = withDefaults(defineProps<Props>(), {
   autoplay: false,
   autoplaySpeed: 0.5,
   autoplayDirection: 'down',
-  pauseOnHover: false
+  pauseOnHover: false,
+  interactive: false
 });
 
 const wrapperRef = useTemplateRef<HTMLDivElement>('wrapperRef');
 const containerRef = useTemplateRef<HTMLDivElement>('containerRef');
 const wrapperCut = ref('9rem');
-let observer: Observer | null = null;
 let rafId: number | null = null;
-let velocity = 0;
 let stopTicker: (() => void) | null = null;
 let startTicker: (() => void) | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -139,49 +144,6 @@ const initializeScroll = () => {
     gsap.set(child, { y });
   });
 
-  observer = Observer.create({
-    target: container,
-    type: 'wheel,touch,pointer',
-    preventDefault: true,
-    onPress: ({ target }) => {
-      (target as HTMLElement).style.cursor = 'grabbing';
-    },
-    onRelease: ({ target }) => {
-      (target as HTMLElement).style.cursor = 'grab';
-      if (Math.abs(velocity) > 0.1) {
-        const momentum = velocity * 0.8;
-        divItems.forEach(child => {
-          gsap.to(child, {
-            duration: 1.5,
-            ease: 'power2.out',
-            y: `+=${momentum}`,
-            modifiers: {
-              y: gsap.utils.unitize(wrapFn)
-            }
-          });
-        });
-      }
-      velocity = 0;
-    },
-    onChange: ({ deltaY, isDragging, event }) => {
-      const d = event.type === 'wheel' ? -deltaY : deltaY;
-      const distance = isDragging ? d * 5 : d * 1.5;
-
-      velocity = distance * 0.5;
-
-      divItems.forEach(child => {
-        gsap.to(child, {
-          duration: isDragging ? 0.3 : 1.2,
-          ease: isDragging ? 'power1.out' : 'power3.out',
-          y: `+=${distance}`,
-          modifiers: {
-            y: gsap.utils.unitize(wrapFn)
-          }
-        });
-      });
-    }
-  });
-
   if (props.autoplay) {
     const directionFactor = props.autoplayDirection === 'down' ? 1 : -1;
     const speedPerFrame = props.autoplaySpeed * directionFactor;
@@ -200,7 +162,7 @@ const initializeScroll = () => {
 
     rafId = requestAnimationFrame(tick);
 
-    if (props.pauseOnHover) {
+    if (props.pauseOnHover && props.interactive) {
       stopTicker = () => rafId && cancelAnimationFrame(rafId);
       startTicker = () => {
         rafId = requestAnimationFrame(tick);
@@ -213,19 +175,13 @@ const initializeScroll = () => {
 };
 
 const cleanup = () => {
-  if (observer) {
-    observer.kill();
-    observer = null;
-  }
   if (rafId) {
     cancelAnimationFrame(rafId);
     rafId = null;
   }
 
-  velocity = 0;
-
   const container = containerRef.value;
-  if (container && props.pauseOnHover && stopTicker && startTicker) {
+  if (container && props.pauseOnHover && props.interactive && stopTicker && startTicker) {
     container.removeEventListener('mouseenter', stopTicker);
     container.removeEventListener('mouseleave', startTicker);
   }
@@ -260,6 +216,7 @@ watch(
     () => props.autoplaySpeed,
     () => props.autoplayDirection,
     () => props.pauseOnHover,
+    () => props.interactive,
     () => props.isTilted,
     () => props.tiltDirection,
     () => props.negativeMargin
@@ -277,6 +234,15 @@ watch(
 <style scoped>
 .infinite-scroll-wrapper {
   isolation: isolate;
+}
+
+.infinite-scroll-wrapper--disabled {
+  pointer-events: none;
+}
+
+.infinite-scroll-wrapper--disabled,
+.infinite-scroll-wrapper--disabled * {
+  cursor: default !important;
 }
 
 .infinite-scroll-wrapper--tilted {
@@ -323,6 +289,10 @@ watch(
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
   -ms-backface-visibility: hidden;
+}
+
+.infinite-scroll-container--interactive {
+  cursor: grab;
 }
 
 .infinite-scroll-item {
