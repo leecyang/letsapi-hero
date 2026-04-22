@@ -11,7 +11,7 @@ defineEmits(['copy-api']);
 
 <template>
   <div class="panel">
-    <h2 class="section-title">一行代码，即刻唤醒。</h2>
+    <h2 class="section-title">一行改动，即刻唤醒。</h2>
     <p class="section-desc">保留熟悉的 OpenAI 风格调用方式，接入成本极低，滚动到这里自动稳住节奏，方便用户停留和复制。</p>
 
     <div class="api-container">
