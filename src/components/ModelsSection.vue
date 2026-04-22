@@ -20,7 +20,7 @@ const items = computed(() =>
   <div class="panel panel--wide models-layout">
     <div class="models-copy">
       <h2 class="section-title">全系矩阵，<br>严阵以待。</h2>
-      <p class="section-desc">这一屏改成了无限滚动模型流，用户停在这里时可以持续扫读完整矩阵，信息密度更高，视觉节奏也更顺。</p>
+      
     </div>
 
     <div class="model-scroll-shell">

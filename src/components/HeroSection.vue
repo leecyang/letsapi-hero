@@ -19,7 +19,7 @@ import GlitchText from './GlitchText.vue';
         <span>体验。</span>
       </span>
     </h1>
-    <p class="hero-subtitle">原生接口、满血模型、极速响应，把单纯“能用”升级成真正沉浸的模型入口。</p>
+    <p class="hero-subtitle">LetsAPI Store 带你无缝跨入原生大模型新纪元。</p>
   </div>
 </template>
 
