@@ -3,12 +3,14 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import HeroSection from './components/HeroSection.vue';
 import PriceSection from './components/PriceSection.vue';
 import ApiSection from './components/ApiSection.vue';
+import SpeedSection from './components/SpeedSection.vue';
 import ModelsSection from './components/ModelsSection.vue';
 
 const sections = [
   { id: 'hero', component: HeroSection },
   { id: 'price', component: PriceSection },
   { id: 'api', component: ApiSection },
+  { id: 'speed', component: SpeedSection },
   { id: 'models', component: ModelsSection },
 ];
 
@@ -59,13 +61,14 @@ const sceneState = computed(() => {
   }
 
   if (value >= 2) {
-    scale = 2 + Math.pow(depth, 3) * 5.5;
-    opacity = 0.5 - depth * 0.33;
+    const cappedDepth = Math.min(depth, 1.2);
+    scale = 2 + Math.pow(cappedDepth, 3) * 5.5;
+    opacity = 0.5 - cappedDepth * 0.28;
   }
 
   return {
     rotation: value * 84,
-    scale,
+    scale: Math.min(10, scale),
     opacity: Math.max(0.08, opacity),
   };
 });
