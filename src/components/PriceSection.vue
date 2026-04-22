@@ -15,7 +15,7 @@ const props = withDefaults(
   <div class="panel">
     <div class="price-title">
       <CountUp
-        :from="7.3"
+        :from="1.5"
         :to="0.35"
         direction="down"
         :duration="2.2"
@@ -28,6 +28,6 @@ const props = withDefaults(
       <span class="price-unit">元 / 500000 tokens</span>
     </div>
     <div class="price-subtitle">的极致价格</div>
-    <p class="price-desc">告别高昂成本。在这里，你将以三分之一的价格，<br>完整体验 100% 满血性能的 Codex 全系列模型。</p>
+    <p class="price-desc">告别高昂成本。在这里，你将以不到四分之一的价格，<br>完整体验 100% 满血性能的 Codex 全系列模型。</p>
   </div>
 </template>
