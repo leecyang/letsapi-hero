@@ -41,10 +41,10 @@ interface HeartbeatResponse {
   uptimeList: Record<string, number>;
 }
 
-const KUMA_PUBLIC_PAGE_URL = 'http://111.229.65.23:33001/status/api';
+const KUMA_PUBLIC_PAGE_URL = 'http://letsapi-kuma.way2api.fun/status/api';
 const KUMA_PROXY_BASE = import.meta.env.VITE_KUMA_PROXY_BASE || '/kuma/api/status-page';
 const KUMA_DIRECT_BASE =
-  import.meta.env.VITE_KUMA_DIRECT_BASE || 'http://111.229.65.23:33001/api/status-page';
+  import.meta.env.VITE_KUMA_DIRECT_BASE || 'http://letsapi-kuma.way2api.fun/api/status-page';
 const REFRESH_INTERVAL = 60_000;
 
 const monitorMeta = ref<StatusMetaResponse | null>(null);
