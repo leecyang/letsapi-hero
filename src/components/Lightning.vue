@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, useTemplateRef } from 'vue';
+import { onMounted, onUnmounted, useTemplateRef, watch } from 'vue';
 
 interface LightningProps {
   hue?: number;
@@ -11,6 +11,8 @@ interface LightningProps {
   speed?: number;
   intensity?: number;
   size?: number;
+  qualityScale?: number;
+  targetFps?: number;
 }
 
 const props = withDefaults(defineProps<LightningProps>(), {
@@ -18,14 +20,40 @@ const props = withDefaults(defineProps<LightningProps>(), {
   xOffset: 0,
   speed: 1,
   intensity: 1,
-  size: 1
+  size: 1,
+  qualityScale: 0.7,
+  targetFps: 24,
 });
 
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 let animationId = 0;
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram | null = null;
+let vertexBuffer: WebGLBuffer | null = null;
 let startTime = 0;
+let resizeObserver: ResizeObserver | null = null;
+let resizeCleanup: (() => void) | null = null;
+let visibilityCleanup: (() => void) | null = null;
+let lastFrameTime = 0;
+let needsStaticUniformUpdate = true;
+
+const uniformLocations: {
+  iResolution: WebGLUniformLocation | null;
+  iTime: WebGLUniformLocation | null;
+  uHue: WebGLUniformLocation | null;
+  uXOffset: WebGLUniformLocation | null;
+  uSpeed: WebGLUniformLocation | null;
+  uIntensity: WebGLUniformLocation | null;
+  uSize: WebGLUniformLocation | null;
+} = {
+  iResolution: null,
+  iTime: null,
+  uHue: null,
+  uXOffset: null,
+  uSpeed: null,
+  uIntensity: null,
+  uSize: null,
+};
 
 const vertexShaderSource = `
 attribute vec2 aPosition;
@@ -44,7 +72,7 @@ uniform float uSpeed;
 uniform float uIntensity;
 uniform float uSize;
 
-#define OCTAVE_COUNT 10
+#define OCTAVE_COUNT 5
 
 vec3 hsv2rgb(vec3 c) {
     vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0,4.0,2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
@@ -133,8 +161,10 @@ const initWebGL = () => {
   if (!canvas) return;
 
   const resizeCanvas = () => {
-    const rect = canvas.getBoundingClientRect();
+    const container = canvas.parentElement;
+    const rect = container?.getBoundingClientRect() ?? canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
+    const effectiveDpr = Math.min(dpr, 1.0);
 
     let width = rect.width;
     let height = rect.height;
@@ -157,8 +187,16 @@ const initWebGL = () => {
     width = Math.max(width, 300);
     height = Math.max(height, 300);
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    const renderScale = Math.max(0.45, Math.min(props.qualityScale, 1));
+    const nextWidth = Math.round(width * effectiveDpr * renderScale);
+    const nextHeight = Math.round(height * effectiveDpr * renderScale);
+
+    if (canvas.width === nextWidth && canvas.height === nextHeight) {
+      return;
+    }
+
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
 
     canvas.style.width = '100%';
     canvas.style.height = '100%';
@@ -166,16 +204,22 @@ const initWebGL = () => {
     canvas.style.position = 'absolute';
     canvas.style.top = '0';
     canvas.style.left = '0';
-  };
 
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+    if (gl) {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      if (uniformLocations.iResolution) {
+        gl.uniform2f(uniformLocations.iResolution, canvas.width, canvas.height);
+      }
+    }
+  };
 
   gl = canvas.getContext('webgl');
   if (!gl) {
     console.error('WebGL not supported');
     return;
   }
+
+  resizeCanvas();
 
   const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
   const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
@@ -193,7 +237,7 @@ const initWebGL = () => {
   gl.useProgram(program);
 
   const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
-  const vertexBuffer = gl.createBuffer();
+  vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
@@ -201,64 +245,140 @@ const initWebGL = () => {
   gl.enableVertexAttribArray(aPosition);
   gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
 
+  uniformLocations.iResolution = gl.getUniformLocation(program, 'iResolution');
+  uniformLocations.iTime = gl.getUniformLocation(program, 'iTime');
+  uniformLocations.uHue = gl.getUniformLocation(program, 'uHue');
+  uniformLocations.uXOffset = gl.getUniformLocation(program, 'uXOffset');
+  uniformLocations.uSpeed = gl.getUniformLocation(program, 'uSpeed');
+  uniformLocations.uIntensity = gl.getUniformLocation(program, 'uIntensity');
+  uniformLocations.uSize = gl.getUniformLocation(program, 'uSize');
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  if (uniformLocations.iResolution) {
+    gl.uniform2f(uniformLocations.iResolution, canvas.width, canvas.height);
+  }
+
   startTime = performance.now();
+  lastFrameTime = startTime;
   render();
+
+  if (typeof ResizeObserver !== 'undefined' && canvas.parentElement) {
+    resizeObserver = new ResizeObserver(() => resizeCanvas());
+    resizeObserver.observe(canvas.parentElement);
+  } else {
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+    resizeCleanup = () => window.removeEventListener('resize', resizeCanvas);
+  }
 
   return () => {
     window.removeEventListener('resize', resizeCanvas);
   };
 };
 
-const render = () => {
-  if (!gl || !program || !canvasRef.value) return;
-
-  const canvas = canvasRef.value;
-
-  const rect = canvas.getBoundingClientRect();
-  if (canvas.width !== rect.width || canvas.height !== rect.height) {
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
+const updateStaticUniforms = () => {
+  if (!gl) {
+    return;
   }
 
-  gl.viewport(0, 0, canvas.width, canvas.height);
+  if (uniformLocations.uHue) {
+    gl.uniform1f(uniformLocations.uHue, props.hue);
+  }
+  if (uniformLocations.uXOffset) {
+    gl.uniform1f(uniformLocations.uXOffset, props.xOffset);
+  }
+  if (uniformLocations.uSpeed) {
+    gl.uniform1f(uniformLocations.uSpeed, props.speed);
+  }
+  if (uniformLocations.uIntensity) {
+    gl.uniform1f(uniformLocations.uIntensity, props.intensity);
+  }
+  if (uniformLocations.uSize) {
+    gl.uniform1f(uniformLocations.uSize, props.size);
+  }
 
-  const iResolutionLocation = gl.getUniformLocation(program, 'iResolution');
-  const iTimeLocation = gl.getUniformLocation(program, 'iTime');
-  const uHueLocation = gl.getUniformLocation(program, 'uHue');
-  const uXOffsetLocation = gl.getUniformLocation(program, 'uXOffset');
-  const uSpeedLocation = gl.getUniformLocation(program, 'uSpeed');
-  const uIntensityLocation = gl.getUniformLocation(program, 'uIntensity');
-  const uSizeLocation = gl.getUniformLocation(program, 'uSize');
+  needsStaticUniformUpdate = false;
+};
 
-  gl.uniform2f(iResolutionLocation, canvas.width, canvas.height);
-  const currentTime = performance.now();
-  gl.uniform1f(iTimeLocation, (currentTime - startTime) / 1000.0);
-  gl.uniform1f(uHueLocation, props.hue);
-  gl.uniform1f(uXOffsetLocation, props.xOffset);
-  gl.uniform1f(uSpeedLocation, props.speed);
-  gl.uniform1f(uIntensityLocation, props.intensity);
-  gl.uniform1f(uSizeLocation, props.size);
+const render = (timestamp = performance.now()) => {
+  if (!gl || !program || !canvasRef.value) return;
+
+  const minFrameDuration = 1000 / Math.max(12, props.targetFps);
+  if (timestamp - lastFrameTime < minFrameDuration) {
+    animationId = requestAnimationFrame(render);
+    return;
+  }
+  lastFrameTime = timestamp;
+
+  if (needsStaticUniformUpdate) {
+    updateStaticUniforms();
+  }
+
+  const currentTime = timestamp;
+  if (uniformLocations.iTime) {
+    gl.uniform1f(uniformLocations.iTime, (currentTime - startTime) / 1000.0);
+  }
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   animationId = requestAnimationFrame(render);
 };
 
-onMounted(() => {
-  initWebGL();
-});
+const startRenderLoop = () => {
+  if (!animationId) {
+    animationId = requestAnimationFrame(render);
+  }
+};
 
-onUnmounted(() => {
+const stopRenderLoop = () => {
   if (animationId) {
     cancelAnimationFrame(animationId);
+    animationId = 0;
   }
+};
+
+onMounted(() => {
+  initWebGL();
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      stopRenderLoop();
+    } else {
+      lastFrameTime = performance.now();
+      startRenderLoop();
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+  visibilityCleanup = () => document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 
 watch(
   () => [props.hue, props.xOffset, props.speed, props.intensity, props.size],
-  () => {}
+  () => {
+    needsStaticUniformUpdate = true;
+  }
 );
+
+onUnmounted(() => {
+  stopRenderLoop();
+
+  resizeObserver?.disconnect();
+  resizeCleanup?.();
+  visibilityCleanup?.();
+  resizeObserver = null;
+  resizeCleanup = null;
+  visibilityCleanup = null;
+
+  if (gl && vertexBuffer) {
+    gl.deleteBuffer(vertexBuffer);
+  }
+
+  if (gl && program) {
+    gl.deleteProgram(program);
+  }
+
+  vertexBuffer = null;
+  program = null;
+  gl = null;
+});
 </script>
 
 <style scoped>

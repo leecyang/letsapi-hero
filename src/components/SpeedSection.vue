@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import GlassSurface from './GlassSurface.vue';
 import Lightning from './Lightning.vue';
 
@@ -51,9 +51,12 @@ const monitorMeta = ref<StatusMetaResponse | null>(null);
 const heartbeatData = ref<HeartbeatResponse | null>(null);
 const isLoading = ref(true);
 const loadError = ref('');
+const effectsEnabled = ref(false);
+const hasLoadedOnce = ref(false);
 
 let refreshTimer = 0;
 let activeController: AbortController | null = null;
+let effectTimer = 0;
 
 const flatMonitors = computed(() =>
   (monitorMeta.value?.publicGroupList ?? []).flatMap((group) => group.monitorList)
@@ -130,10 +133,14 @@ async function loadMonitorData() {
 
       monitorMeta.value = meta;
       heartbeatData.value = heartbeat;
+      hasLoadedOnce.value = true;
       loadError.value = '';
       isLoading.value = false;
       return;
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
       lastError = error;
     }
   }
@@ -146,6 +153,10 @@ async function loadMonitorData() {
 }
 
 function startPolling() {
+  if (refreshTimer) {
+    return;
+  }
+
   refreshTimer = window.setInterval(() => {
     void loadMonitorData();
   }, REFRESH_INTERVAL);
@@ -252,12 +263,38 @@ function compressHistory(history: HeartbeatEntry[], targetBars: number) {
   return bars;
 }
 
-onMounted(() => {
-  void loadMonitorData();
-  startPolling();
-});
+function clearEffectTimer() {
+  if (effectTimer) {
+    window.clearTimeout(effectTimer);
+    effectTimer = 0;
+  }
+}
+
+watch(
+  () => props.isActive,
+  (active) => {
+    clearEffectTimer();
+
+    if (active) {
+      isLoading.value = !hasLoadedOnce.value;
+      effectTimer = window.setTimeout(() => {
+        effectsEnabled.value = true;
+      }, 180);
+
+      void loadMonitorData();
+      startPolling();
+      return;
+    }
+
+    effectsEnabled.value = false;
+    stopPolling();
+    activeController?.abort();
+  },
+  { immediate: true }
+);
 
 onBeforeUnmount(() => {
+  clearEffectTimer();
   stopPolling();
   activeController?.abort();
 });
@@ -271,30 +308,39 @@ onBeforeUnmount(() => {
 
     <div class="speed-stage" aria-label="Kuma 实时监控面板">
       <div class="speed-stage__glow" aria-hidden="true"></div>
-      <div v-if="props.isActive" class="speed-stage__lightning" aria-hidden="true">
+      <div v-if="effectsEnabled" class="speed-stage__lightning" aria-hidden="true">
         <Lightning
           :hue="230"
           :x-offset="0"
-          :speed="1"
-          :intensity="1"
-          :size="1"
+          :speed="0.85"
+          :intensity="0.92"
+          :size="0.92"
+          :quality-scale="0.62"
+          :target-fps="20"
           class="w-full h-full"
         />
       </div>
 
       <div class="speed-monitor-shell">
-        <GlassSurface
-          width="100%"
-          height="100%"
-          :border-radius="28"
-          :brightness="82"
-          :opacity="0.9"
-          :blur="10"
-          :displace="0.45"
-          :background-opacity="0.08"
-          :saturation="1.35"
-          mix-blend-mode="normal"
-          class-name="speed-monitor-glass"
+        <component
+          :is="effectsEnabled ? GlassSurface : 'div'"
+          v-bind="effectsEnabled
+            ? {
+                width: '100%',
+                height: '100%',
+                borderRadius: 28,
+                brightness: 82,
+                opacity: 0.9,
+                blur: 10,
+                displace: 0.45,
+                backgroundOpacity: 0.08,
+                saturation: 1.35,
+                mixBlendMode: 'normal',
+                className: 'speed-monitor-glass',
+              }
+            : {
+                class: 'speed-monitor-glass speed-monitor-glass--fallback',
+              }"
         >
           <div class="speed-monitor">
             <div v-if="isLoading" class="speed-monitor__empty">
@@ -344,10 +390,10 @@ onBeforeUnmount(() => {
             </div>
 
             <p class="section-note speed-note">
-              毫秒级首字延迟（TTFB），99.9% 运行可靠性保障。
+              毫秒级首字延迟（TTFB），99% 运行可靠性保障。
             </p>
           </div>
-        </GlassSurface>
+        </component>
       </div>
     </div>
   </div>
