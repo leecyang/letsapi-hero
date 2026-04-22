@@ -5,8 +5,8 @@ import GlitchText from './GlitchText.vue';
 <template>
   <div class="panel panel--hero">
     <h1 class="hero-title hero-title--glitch">
-      <span>超越边界的</span>
-      <span class="hero-title__line">
+      <span class="hero-title__line hero-title__line--full">超越边界的</span>
+      <span class="hero-title__line hero-title__line--full">
         <span class="hero-title__glitch">
           <GlitchText
             children="Codex"
@@ -37,6 +37,11 @@ import GlitchText from './GlitchText.vue';
   justify-content: center;
   align-items: baseline;
   gap: 0.24em;
+}
+
+.hero-title__line--full {
+  width: 100%;
+  text-align: center;
 }
 
 .hero-title__glitch {
