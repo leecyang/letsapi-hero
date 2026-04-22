@@ -130,24 +130,26 @@
     --toast-shadow: 0 18px 40px rgba(95, 116, 148, 0.22);
     --logo-shadow: rgba(0, 198, 255, 0.16);
     --speed-stage-bg:
-      radial-gradient(circle at 50% 38%, rgba(173, 220, 255, 0.34), transparent 18%),
-      radial-gradient(circle at 50% 52%, rgba(63, 123, 255, 0.3), transparent 34%),
-      radial-gradient(circle at 50% 64%, rgba(17, 45, 112, 0.54), transparent 62%),
-      linear-gradient(180deg, rgba(250, 252, 255, 0.99), rgba(223, 235, 255, 0.97) 44%, rgba(211, 224, 247, 0.99) 100%);
+      radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.96), transparent 18%),
+      radial-gradient(circle at 50% 38%, rgba(187, 228, 255, 0.52), transparent 22%),
+      radial-gradient(circle at 50% 54%, rgba(110, 174, 255, 0.3), transparent 34%),
+      radial-gradient(circle at 50% 72%, rgba(143, 196, 255, 0.18), transparent 52%),
+      linear-gradient(180deg, rgba(252, 254, 255, 0.99), rgba(238, 245, 255, 0.98) 48%, rgba(225, 236, 249, 1) 100%);
     --speed-stage-border: rgba(91, 127, 189, 0.28);
     --speed-stage-shadow:
       0 28px 64px rgba(103, 126, 170, 0.2),
       0 16px 34px rgba(55, 93, 180, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    --speed-lightning-opacity: 0.52;
-    --speed-lightning-canvas-opacity: 0.96;
-    --speed-lightning-blend: screen;
-    --speed-lightning-filter: saturate(1.45) brightness(1.32) contrast(1.1);
-    --speed-glow: radial-gradient(circle, rgba(63, 123, 255, 0.34) 0%, rgba(123, 231, 255, 0.24) 24%, rgba(39, 88, 214, 0.12) 48%, transparent 72%);
+    --speed-lightning-opacity: 0.72;
+    --speed-lightning-canvas-opacity: 0.88;
+    --speed-lightning-blend: overlay;
+    --speed-lightning-filter: saturate(1.22) brightness(1.44) contrast(1.06);
+    --speed-glow: radial-gradient(circle, rgba(122, 196, 255, 0.34) 0%, rgba(163, 225, 255, 0.24) 26%, rgba(76, 132, 235, 0.12) 50%, transparent 74%);
     --speed-overlay:
-      radial-gradient(circle at 50% 36%, rgba(196, 231, 255, 0.22), transparent 18%),
-      radial-gradient(circle at 50% 58%, rgba(36, 78, 196, 0.3), transparent 28%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03) 24%, rgba(210, 223, 247, 0.28) 100%);
+      radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.4), transparent 16%),
+      radial-gradient(circle at 50% 46%, rgba(203, 235, 255, 0.28), transparent 22%),
+      radial-gradient(circle at 50% 66%, rgba(114, 173, 255, 0.18), transparent 34%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 26%, rgba(214, 227, 247, 0.22) 100%);
     --monitor-fallback-bg:
       linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(241, 246, 255, 0.74)),
       rgba(236, 243, 253, 0.78);
@@ -1072,11 +1074,11 @@ a {
   }
 
   .model-scroll-shell {
-    width: max(170vw, 44rem);
+    width: max(200vw, 44rem);
     height: min(78vh, 760px);
     padding-inline: clamp(12px, 3vw, 24px);
     max-width: none;
-    transform: translateX(-12vw);
+    transform: translateX(-55vw);
     margin-inline: auto;
     overflow: visible;
   }

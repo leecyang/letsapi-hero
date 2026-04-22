@@ -95,11 +95,11 @@ const monitorRows = computed(() =>
 const lightningConfig = computed(() =>
   prefersLightMode.value
     ? {
-        hue: 200,
+        hue: 208,
         xOffset: 0,
-        speed: 0.9,
-        intensity: 1.2,
-        size: 1,
+        speed: 0.82,
+        intensity: 1.5,
+        size: 0.94,
         qualityScale: 0.68,
         targetFps: 20,
       }
