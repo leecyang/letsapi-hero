@@ -20,7 +20,9 @@ const items = computed(() =>
   <div class="panel panel--wide models-layout">
     <div class="models-copy">
       <h2 class="section-title">全系矩阵，<br>严阵以待。</h2>
-      
+      <p class="section-note models-note">
+        覆盖全场景的业务需求，全系列 Codex 矩阵为您提供最坚实的算力底座。
+      </p>
     </div>
 
     <div class="model-scroll-shell">

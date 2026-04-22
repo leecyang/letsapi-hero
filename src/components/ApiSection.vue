@@ -23,5 +23,11 @@ defineEmits(['copy-api']);
         </svg>
       </button>
     </div>
+
+    <p class="section-note section-note--center">
+      完美兼容 OpenAI 标准 SDK。您只需在现有代码中修改
+      <span class="section-note__code">BASE_URL</span>
+      即可完成平滑迁移。
+    </p>
   </div>
 </template>

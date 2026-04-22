@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import GlassSurface from './GlassSurface.vue';
 import Lightning from './Lightning.vue';
 
 const props = withDefaults(
@@ -71,12 +72,13 @@ const latestHeartbeatMap = computed<Record<string, HeartbeatEntry | null>>(() =>
 const monitorRows = computed(() =>
   flatMonitors.value.map((monitor) => {
     const history = heartbeatData.value?.heartbeatList?.[`${monitor.id}`] ?? [];
+    const recentHistory = history.slice(-36);
     const latest = latestHeartbeatMap.value[String(monitor.id)];
     const uptime = heartbeatData.value?.uptimeList?.[`${monitor.id}_24`] ?? null;
 
     return {
       ...monitor,
-      history: history.slice(-36),
+      historyBars: compressHistory(recentHistory, 18),
       uptime,
       statusText: getStatusText(latest?.status),
       latestPingText: formatPing(latest?.ping ?? null),
@@ -221,6 +223,35 @@ function getHeartbeatTooltip(heartbeat: HeartbeatEntry) {
   return `${getStatusText(heartbeat.status)} · ${formatTime(heartbeat.time)} · ${formatPing(heartbeat.ping)}`;
 }
 
+function compressHistory(history: HeartbeatEntry[], targetBars: number) {
+  if (!history.length) {
+    return [];
+  }
+
+  if (history.length <= targetBars) {
+    return history;
+  }
+
+  const bars: HeartbeatEntry[] = [];
+  const chunkSize = history.length / targetBars;
+
+  for (let index = 0; index < targetBars; index += 1) {
+    const start = Math.floor(index * chunkSize);
+    const end = Math.min(history.length, Math.floor((index + 1) * chunkSize));
+    const chunk = history.slice(start, Math.max(start + 1, end));
+    const latest = chunk[chunk.length - 1];
+    const hasDown = chunk.some((item) => item.status === 0);
+    const hasWarn = chunk.some((item) => item.status === 2);
+
+    bars.push({
+      ...latest,
+      status: hasDown ? 0 : hasWarn ? 2 : latest.status,
+    });
+  }
+
+  return bars;
+}
+
 onMounted(() => {
   void loadMonitorData();
   startPolling();
@@ -251,52 +282,72 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="speed-monitor">
-        <div v-if="isLoading" class="speed-monitor__empty">
-          正在拉取实时状态...
-        </div>
-
-        <div v-else-if="loadError" class="speed-monitor__empty speed-monitor__empty--error">
-          <span>当前页面未能拉到真实心跳数据。</span>
-          <span>请确认已经把 `/kuma` 同源反向代理到 Kuma 服务。</span>
-          <a
-            class="speed-monitor__link"
-            :href="KUMA_PUBLIC_PAGE_URL"
-            target="_blank"
-            rel="noreferrer"
-          >
-            打开原始状态页
-          </a>
-        </div>
-
-        <div v-else class="speed-monitor__list">
-          <article
-            v-for="monitor in monitorRows"
-            :key="monitor.id"
-            class="speed-monitor-row"
-          >
-            <div class="speed-monitor-row__main">
-              <strong class="speed-monitor-row__name">{{ monitor.name }}</strong>
-              <span class="speed-monitor-row__meta">
-                {{ monitor.uptimeText }} / {{ monitor.latestPingText }}
-              </span>
+      <div class="speed-monitor-shell">
+        <GlassSurface
+          width="100%"
+          height="100%"
+          :border-radius="28"
+          :brightness="82"
+          :opacity="0.9"
+          :blur="10"
+          :displace="0.45"
+          :background-opacity="0.08"
+          :saturation="1.35"
+          mix-blend-mode="normal"
+          class-name="speed-monitor-glass"
+        >
+          <div class="speed-monitor">
+            <div v-if="isLoading" class="speed-monitor__empty">
+              正在拉取实时状态...
             </div>
 
-            <div class="speed-monitor-row__dots" aria-hidden="true">
-              <span
-                v-for="(heartbeat, index) in monitor.history"
-                :key="`${monitor.id}-${index}-${heartbeat.time}`"
-                class="speed-monitor-row__dot"
-                :class="getDotClass(heartbeat.status)"
-                :title="getHeartbeatTooltip(heartbeat)"
-              ></span>
+            <div v-else-if="loadError" class="speed-monitor__empty speed-monitor__empty--error">
+              <span>当前页面未能拉到真实心跳数据。</span>
+              <span>请确认已经把 `/kuma` 同源反向代理到 Kuma 服务。</span>
+              <a
+                class="speed-monitor__link"
+                :href="KUMA_PUBLIC_PAGE_URL"
+                target="_blank"
+                rel="noreferrer"
+              >
+                打开原始状态页
+              </a>
             </div>
 
-            <span class="speed-monitor-row__status">
-              {{ monitor.statusText }}
-            </span>
-          </article>
-        </div>
+            <div v-else class="speed-monitor__list">
+              <article
+                v-for="monitor in monitorRows"
+                :key="monitor.id"
+                class="speed-monitor-row"
+              >
+                <div class="speed-monitor-row__main">
+                  <strong class="speed-monitor-row__name">{{ monitor.name }}</strong>
+                  <span class="speed-monitor-row__meta">
+                    {{ monitor.uptimeText }} / {{ monitor.latestPingText }}
+                  </span>
+                </div>
+
+                <div class="speed-monitor-row__dots" aria-hidden="true">
+                  <span
+                    v-for="(heartbeat, index) in monitor.historyBars"
+                    :key="`${monitor.id}-${index}-${heartbeat.time}`"
+                    class="speed-monitor-row__dot"
+                    :class="getDotClass(heartbeat.status)"
+                    :title="getHeartbeatTooltip(heartbeat)"
+                  ></span>
+                </div>
+
+                <span class="speed-monitor-row__status">
+                  {{ monitor.statusText }}
+                </span>
+              </article>
+            </div>
+
+            <p class="section-note speed-note">
+              毫秒级首字延迟（TTFB），99.9% 运行可靠性保障。
+            </p>
+          </div>
+        </GlassSurface>
       </div>
     </div>
   </div>
