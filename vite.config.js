@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/kuma': {
-        target: 'http://111.229.65.23:33001',
+        target: 'http://letsapi-kuma.way2api.fun',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/kuma/, ''),
       },
