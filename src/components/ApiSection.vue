@@ -12,15 +12,18 @@ defineEmits(['copy-api']);
 <template>
   <div class="panel">
     <h2 class="section-title">一行改动，即刻唤醒。</h2>
-    
+
     <div class="api-container">
-      <div class="api-method">POST</div>
-      <div class="api-url">{{ apiUrl }}</div>
+      <div class="api-request">
+        <div class="api-method">POST</div>
+        <div class="api-url">{{ apiUrl }}</div>
+      </div>
       <button class="copy-btn" aria-label="复制 API 地址" @click="$emit('copy-api')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
+        <span class="copy-btn__label">复制</span>
       </button>
     </div>
 

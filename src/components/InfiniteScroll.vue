@@ -31,7 +31,7 @@
         <div
           v-for="(item, index) in items"
           :key="index"
-          class="box-border relative flex justify-center items-center p-4 border-2 border-white rounded-2xl font-semibold text-xl text-center infinite-scroll-item select-none"
+          class="box-border relative flex justify-center items-center p-4 rounded-[1.75rem] font-semibold text-center infinite-scroll-item select-none"
           :style="{
             height: itemMinHeight + 'px',
             marginTop: negativeMargin
@@ -289,20 +289,18 @@ watch(
   z-index: 3;
   pointer-events: none;
   clip-path: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 22%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 45%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 30px 80px rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .infinite-scroll-wrapper::before,
 .infinite-scroll-wrapper::after {
   content: '';
   position: absolute;
-  background: linear-gradient(var(--dir, to bottom), #0b0b0b, transparent);
+  background: transparent;
   height: 25%;
   width: 100%;
   z-index: 1;
@@ -328,12 +326,38 @@ watch(
 }
 
 .infinite-scroll-item {
-  --accent-color: #ffffff;
-  border-color: var(--accent-color);
+  color: var(--scroll-item-text);
+  border: 1px solid var(--scroll-item-border);
+  background: var(--scroll-item-bg);
+  box-shadow: var(--scroll-item-shadow);
+  overflow: hidden;
+  font-size: clamp(1rem, 2.2vw, 1.24rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  font-weight: 750;
+  text-shadow: var(--scroll-item-text-shadow);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
   -ms-backface-visibility: hidden;
   transform: translateZ(0);
+  backdrop-filter: blur(18px);
+}
+
+.infinite-scroll-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--scroll-item-overlay);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .infinite-scroll-item {
+    padding: 1rem;
+    font-size: 1rem;
+  }
 }
 </style>

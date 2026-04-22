@@ -39,71 +39,13 @@ const inlineStyles = computed(
   })
 );
 
-const baseClasses = [
-  'text-white',
-  'font-black',
-  'whitespace-nowrap',
-  'relative',
-  'mx-auto',
-  'select-none',
-  'cursor-pointer',
-  'text-[clamp(2rem,10vw,8rem)]',
-
-  'before:content-[attr(data-text)]',
-  'before:absolute',
-  'before:top-0',
-  'before:text-white',
-  'before:bg-[#0b0b0b]',
-  'before:overflow-hidden',
-  'before:[clip-path:inset(0_0_0_0)]',
-
-  'after:content-[attr(data-text)]',
-  'after:absolute',
-  'after:top-0',
-  'after:text-white',
-  'after:bg-[#0b0b0b]',
-  'after:overflow-hidden',
-  'after:[clip-path:inset(0_0_0_0)]'
-];
-
-const normalGlitchClasses = [
-  'after:left-[10px]',
-  'after:[text-shadow:var(--after-shadow,-10px_0_red)]',
-  'after:[animation:animate-glitch_var(--after-duration,3s)_infinite_linear_alternate-reverse]',
-
-  'before:left-[-10px]',
-  'before:[text-shadow:var(--before-shadow,10px_0_cyan)]',
-  'before:[animation:animate-glitch_var(--before-duration,2s)_infinite_linear_alternate-reverse]'
-];
-
-const hoverOnlyClasses = [
-  'before:content-[""]',
-  'before:opacity-0',
-  'before:[animation:none]',
-  'after:content-[""]',
-  'after:opacity-0',
-  'after:[animation:none]',
-
-  'hover:before:content-[attr(data-text)]',
-  'hover:before:opacity-100',
-  'hover:before:left-[-10px]',
-  'hover:before:[text-shadow:var(--before-shadow,10px_0_cyan)]',
-  'hover:before:[animation:animate-glitch_var(--before-duration,2s)_infinite_linear_alternate-reverse]',
-
-  'hover:after:content-[attr(data-text)]',
-  'hover:after:opacity-100',
-  'hover:after:left-[10px]',
-  'hover:after:[text-shadow:var(--after-shadow,-10px_0_red)]',
-  'hover:after:[animation:animate-glitch_var(--after-duration,3s)_infinite_linear_alternate-reverse]'
-];
-
 const computedClasses = computed(() => {
-  const classes = [...baseClasses];
+  const classes = ['glitch-text'];
 
   if (props.enableOnHover) {
-    classes.push(...hoverOnlyClasses);
+    classes.push('glitch-text--hover');
   } else {
-    classes.push(...normalGlitchClasses);
+    classes.push('glitch-text--active');
   }
 
   if (props.className) {
@@ -114,7 +56,71 @@ const computedClasses = computed(() => {
 });
 </script>
 
-<style>
+<style scoped>
+.glitch-text {
+  position: relative;
+  display: inline-block;
+  margin-inline: auto;
+  color: var(--glitch-text-color);
+  font-weight: 900;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  user-select: none;
+  cursor: default;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: var(--glitch-text-color);
+  background: var(--glitch-mask-bg);
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  pointer-events: none;
+}
+
+.glitch-text--active::after {
+  left: 10px;
+  text-shadow: var(--after-shadow, -10px 0 red);
+  animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse;
+}
+
+.glitch-text--active::before {
+  left: -10px;
+  text-shadow: var(--before-shadow, 10px 0 cyan);
+  animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse;
+}
+
+.glitch-text--hover {
+  cursor: pointer;
+}
+
+.glitch-text--hover::before,
+.glitch-text--hover::after {
+  content: "";
+  opacity: 0;
+  animation: none;
+}
+
+.glitch-text--hover:hover::before {
+  content: attr(data-text);
+  opacity: 1;
+  left: -10px;
+  text-shadow: var(--before-shadow, 10px 0 cyan);
+  animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse;
+}
+
+.glitch-text--hover:hover::after {
+  content: attr(data-text);
+  opacity: 1;
+  left: 10px;
+  text-shadow: var(--after-shadow, -10px 0 red);
+  animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse;
+}
+
 @keyframes animate-glitch {
   0% {
     clip-path: inset(20% 0 50% 0);

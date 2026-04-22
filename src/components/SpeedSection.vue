@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import GlassSurface from './GlassSurface.vue';
 import Lightning from './Lightning.vue';
 
@@ -53,10 +53,12 @@ const isLoading = ref(true);
 const loadError = ref('');
 const effectsEnabled = ref(false);
 const hasLoadedOnce = ref(false);
+const prefersLightMode = ref(false);
 
 let refreshTimer = 0;
 let activeController: AbortController | null = null;
 let effectTimer = 0;
+let colorSchemeCleanup: (() => void) | null = null;
 
 const flatMonitors = computed(() =>
   (monitorMeta.value?.publicGroupList ?? []).flatMap((group) => group.monitorList)
@@ -89,6 +91,42 @@ const monitorRows = computed(() =>
     };
   })
 );
+
+const lightningConfig = computed(() =>
+  prefersLightMode.value
+    ? {
+        hue: 200,
+        xOffset: 0,
+        speed: 0.9,
+        intensity: 1.2,
+        size: 1,
+        qualityScale: 0.68,
+        targetFps: 20,
+      }
+    : {
+        hue: 230,
+        xOffset: 0,
+        speed: 0.85,
+        intensity: 0.92,
+        size: 0.92,
+        qualityScale: 0.62,
+        targetFps: 20,
+      }
+);
+
+const monitorGlassProps = computed(() => ({
+  width: '100%',
+  height: '100%',
+  borderRadius: 28,
+  brightness: prefersLightMode.value ? 86 : 82,
+  opacity: prefersLightMode.value ? 0.88 : 0.9,
+  blur: prefersLightMode.value ? 11 : 10,
+  displace: 0.45,
+  backgroundOpacity: prefersLightMode.value ? 0.05 : 0.08,
+  saturation: prefersLightMode.value ? 1.25 : 1.35,
+  mixBlendMode: 'normal' as const,
+  className: 'speed-monitor-glass',
+}));
 
 async function fetchJson<T>(url: string, controller: AbortController) {
   const response = await fetch(url, {
@@ -270,6 +308,22 @@ function clearEffectTimer() {
   }
 }
 
+function setupColorSchemeWatcher() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+  prefersLightMode.value = mediaQuery.matches;
+
+  const handleChange = (event: MediaQueryListEvent) => {
+    prefersLightMode.value = event.matches;
+  };
+
+  mediaQuery.addEventListener('change', handleChange);
+  colorSchemeCleanup = () => mediaQuery.removeEventListener('change', handleChange);
+}
+
 watch(
   () => props.isActive,
   (active) => {
@@ -293,10 +347,16 @@ watch(
   { immediate: true }
 );
 
+onMounted(() => {
+  setupColorSchemeWatcher();
+});
+
 onBeforeUnmount(() => {
   clearEffectTimer();
   stopPolling();
   activeController?.abort();
+  colorSchemeCleanup?.();
+  colorSchemeCleanup = null;
 });
 </script>
 
@@ -310,13 +370,13 @@ onBeforeUnmount(() => {
       <div class="speed-stage__glow" aria-hidden="true"></div>
       <div v-if="effectsEnabled" class="speed-stage__lightning" aria-hidden="true">
         <Lightning
-          :hue="230"
-          :x-offset="0"
-          :speed="0.85"
-          :intensity="0.92"
-          :size="0.92"
-          :quality-scale="0.62"
-          :target-fps="20"
+          :hue="lightningConfig.hue"
+          :x-offset="lightningConfig.xOffset"
+          :speed="lightningConfig.speed"
+          :intensity="lightningConfig.intensity"
+          :size="lightningConfig.size"
+          :quality-scale="lightningConfig.qualityScale"
+          :target-fps="lightningConfig.targetFps"
           class="w-full h-full"
         />
       </div>
@@ -325,19 +385,7 @@ onBeforeUnmount(() => {
         <component
           :is="effectsEnabled ? GlassSurface : 'div'"
           v-bind="effectsEnabled
-            ? {
-                width: '100%',
-                height: '100%',
-                borderRadius: 28,
-                brightness: 82,
-                opacity: 0.9,
-                blur: 10,
-                displace: 0.45,
-                backgroundOpacity: 0.08,
-                saturation: 1.35,
-                mixBlendMode: 'normal',
-                className: 'speed-monitor-glass',
-              }
+            ? monitorGlassProps
             : {
                 class: 'speed-monitor-glass speed-monitor-glass--fallback',
               }"

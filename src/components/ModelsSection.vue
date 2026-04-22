@@ -28,7 +28,7 @@ const items = computed(() =>
     <div class="model-scroll-shell">
       <InfiniteScroll
         :items="items"
-        width="19rem"
+        width="20.5rem"
         max-height="100%"
         :item-min-height="150"
         :is-tilted="true"

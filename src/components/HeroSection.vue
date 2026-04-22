@@ -27,11 +27,14 @@ import GlitchText from './GlitchText.vue';
 .hero-title--glitch {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .hero-title__line {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: baseline;
   gap: 0.24em;
 }
@@ -48,6 +51,7 @@ import GlitchText from './GlitchText.vue';
   line-height: inherit;
   font-weight: inherit;
   letter-spacing: inherit;
-  color: #ffffff;
+  color: var(--glitch-text-color);
+  text-shadow: 0 12px 30px rgba(0, 198, 255, 0.08);
 }
 </style>

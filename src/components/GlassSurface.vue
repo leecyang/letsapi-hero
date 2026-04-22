@@ -157,23 +157,35 @@ const generateDisplacementMap = () => {
   const actualWidth = rect?.width || 400;
   const actualHeight = rect?.height || 200;
   const edgeSize = Math.min(actualWidth, actualHeight) * (props.borderWidth * 0.5);
+  const baseFill = isDarkMode.value ? '#000000' : '#f7fbff';
+  const redStop = isDarkMode.value ? 'red' : '#dbe9ff';
+  const blueStop = isDarkMode.value ? 'blue' : '#bad3ff';
+  const surfaceLightness = isDarkMode.value
+    ? props.brightness
+    : Math.min(99, props.brightness + 14);
+  const surfaceOpacity = isDarkMode.value
+    ? props.opacity
+    : Math.min(0.88, props.opacity);
+  const surfaceFill = isDarkMode.value
+    ? `hsl(0 0% ${surfaceLightness}% / ${surfaceOpacity})`
+    : `hsl(210 100% ${surfaceLightness}% / ${surfaceOpacity})`;
 
   const svgContent = `
       <svg viewBox="0 0 ${actualWidth} ${actualHeight}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="${redGradId}" x1="100%" y1="0%" x2="0%" y2="0%">
             <stop offset="0%" stop-color="#0000"/>
-            <stop offset="100%" stop-color="red"/>
+            <stop offset="100%" stop-color="${redStop}"/>
           </linearGradient>
           <linearGradient id="${blueGradId}" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stop-color="#0000"/>
-            <stop offset="100%" stop-color="blue"/>
+            <stop offset="100%" stop-color="${blueStop}"/>
           </linearGradient>
         </defs>
-        <rect x="0" y="0" width="${actualWidth}" height="${actualHeight}" fill="black"></rect>
+        <rect x="0" y="0" width="${actualWidth}" height="${actualHeight}" fill="${baseFill}"></rect>
         <rect x="0" y="0" width="${actualWidth}" height="${actualHeight}" rx="${props.borderRadius}" fill="url(#${redGradId})" />
         <rect x="0" y="0" width="${actualWidth}" height="${actualHeight}" rx="${props.borderRadius}" fill="url(#${blueGradId})" style="mix-blend-mode: ${props.mixBlendMode}" />
-        <rect x="${edgeSize}" y="${edgeSize}" width="${actualWidth - edgeSize * 2}" height="${actualHeight - edgeSize * 2}" rx="${props.borderRadius}" fill="hsl(0 0% ${props.brightness}% / ${props.opacity})" style="filter:blur(${props.blur}px)" />
+        <rect x="${edgeSize}" y="${edgeSize}" width="${actualWidth - edgeSize * 2}" height="${actualHeight - edgeSize * 2}" rx="${props.borderRadius}" fill="${surfaceFill}" style="filter:blur(${props.blur}px)" />
       </svg>
     `;
 
@@ -224,8 +236,13 @@ const containerStyles = computed(() => {
       ...baseStyles,
       background: isDarkMode.value
         ? `hsl(0 0% 0% / ${props.backgroundOpacity})`
-        : `hsl(0 0% 100% / ${props.backgroundOpacity})`,
-      backdropFilter: `url(#${filterId}) saturate(${props.saturation})`,
+        : `linear-gradient(180deg, rgba(255, 255, 255, ${Math.max(props.backgroundOpacity, 0.42)}), rgba(240, 246, 255, ${Math.max(props.backgroundOpacity - 0.04, 0.3)}))`,
+      backdropFilter: isDarkMode.value
+        ? `url(#${filterId}) saturate(${props.saturation})`
+        : `url(#${filterId}) saturate(${Math.max(props.saturation, 1.2)}) brightness(1.03)`,
+      border: isDarkMode.value
+        ? '1px solid rgba(255, 255, 255, 0.12)'
+        : '1px solid rgba(125, 154, 193, 0.22)',
       boxShadow: isDarkMode.value
         ? `0 0 2px 1px color-mix(in oklch, white, transparent 65%) inset,
            0 0 10px 4px color-mix(in oklch, white, transparent 85%) inset,
@@ -235,14 +252,11 @@ const containerStyles = computed(() => {
            0px 4px 16px rgba(17, 17, 26, 0.05) inset,
            0px 8px 24px rgba(17, 17, 26, 0.05) inset,
            0px 16px 56px rgba(17, 17, 26, 0.05) inset`
-        : `0 0 2px 1px color-mix(in oklch, black, transparent 85%) inset,
-           0 0 10px 4px color-mix(in oklch, black, transparent 90%) inset,
-           0px 4px 16px rgba(17, 17, 26, 0.05),
-           0px 8px 24px rgba(17, 17, 26, 0.05),
-           0px 16px 56px rgba(17, 17, 26, 0.05),
-           0px 4px 16px rgba(17, 17, 26, 0.05) inset,
-           0px 8px 24px rgba(17, 17, 26, 0.05) inset,
-           0px 16px 56px rgba(17, 17, 26, 0.05) inset`
+        : `0 20px 48px rgba(123, 145, 179, 0.16),
+           0 10px 24px rgba(123, 145, 179, 0.12),
+           inset 0 1px 0 rgba(255, 255, 255, 0.98),
+           inset 0 -1px 0 rgba(206, 221, 242, 0.5),
+           inset 0 0 0 1px rgba(255, 255, 255, 0.32)`
     };
   } else {
     if (isDarkMode.value) {
@@ -269,22 +283,23 @@ const containerStyles = computed(() => {
       if (!backdropFilterSupported) {
         return {
           ...baseStyles,
-          background: 'rgba(255, 255, 255, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
-                      inset 0 -1px 0 0 rgba(255, 255, 255, 0.3)`
+          background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(239, 246, 255, 0.72))',
+          border: '1px solid rgba(125, 154, 193, 0.24)',
+          boxShadow: `0 18px 42px rgba(117, 138, 170, 0.16),
+                      inset 0 1px 0 0 rgba(255, 255, 255, 0.94),
+                      inset 0 -1px 0 0 rgba(205, 220, 241, 0.52)`
         };
       } else {
         return {
           ...baseStyles,
-          background: 'rgba(255, 255, 255, 0.25)',
-          backdropFilter: 'blur(12px) saturate(1.8) brightness(1.1)',
-          WebkitBackdropFilter: 'blur(12px) saturate(1.8) brightness(1.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          boxShadow: `0 8px 32px 0 rgba(31, 38, 135, 0.2),
-                      0 2px 16px 0 rgba(31, 38, 135, 0.1),
-                      inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
-                      inset 0 -1px 0 0 rgba(255, 255, 255, 0.2)`
+          background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(239, 246, 255, 0.62))',
+          backdropFilter: 'blur(18px) saturate(1.45) brightness(1.04)',
+          WebkitBackdropFilter: 'blur(18px) saturate(1.45) brightness(1.04)',
+          border: '1px solid rgba(125, 154, 193, 0.24)',
+          boxShadow: `0 18px 42px rgba(117, 138, 170, 0.16),
+                      0 8px 18px rgba(117, 138, 170, 0.1),
+                      inset 0 1px 0 0 rgba(255, 255, 255, 0.96),
+                      inset 0 -1px 0 0 rgba(205, 220, 241, 0.56)`
         };
       }
     }
